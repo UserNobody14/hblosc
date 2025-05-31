@@ -52,13 +52,11 @@ extra-doc-files:    CHANGELOG.md
 extra-source-files: 
     cbits/hs_blosc.h 
     cbits/hs_blosc.c
-    c-blosc/Makefile
     c-blosc/LICENSE.txt
     c-blosc/blosc/*.h
     c-blosc/blosc/*.c
     c-blosc/blosc/win32/*.h
     c-blosc/blosc/win32/*.c
-    c-blosc/blosc/Makefile
     c-blosc/CMakeLists.txt
     c-blosc/blosc/CMakeLists.txt
     c-blosc/internal-complibs/**/*.h
@@ -117,11 +115,7 @@ library
 
     -- Include directories for C sources
     include-dirs:     
-        cbits 
-        c-blosc
-        c-blosc/blosc
-        c-blosc/build
-        c-blosc/build/blosc
+        cbits
 
     -- Extra libraries to link with
     extra-libraries:  blosc
