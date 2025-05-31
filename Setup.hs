@@ -21,6 +21,8 @@ import qualified Distribution.Verbosity             as Verbosity
 import           System.Directory                   (doesDirectoryExist,
                                                      doesFileExist,
                                                      getCurrentDirectory)
+import qualified System.Info                        as System.Info
+import           System.Process                     (readProcess)
 
 #if MIN_VERSION_Cabal(2, 0, 0)
 import           Distribution.Version               (mkVersion)
@@ -59,16 +61,33 @@ execCMake verbosity build_target target = do
 #endif
                       Nothing     -> "cmake"
     
-    -- Always configure the build to ensure latest settings are applied
-    rawSystemExit verbosity cmakeExec ["-S", "c-blosc", "-B", "c-blosc/build", 
-                                      "-DBUILD_TESTS=OFF", "-DBUILD_BENCHMARKS=OFF",
-                                      "-DCMAKE_BUILD_TYPE=Release",
-                                      "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"]
+    -- Platform-specific configuration options
+    -- On Windows, use simpler build options to avoid hanging with MSBuild
+    let isWindows = System.Info.os == "mingw32" || System.Info.os == "win32" || System.Info.os == "windows"
+        configArgs = ["-S", "c-blosc", "-B", "c-blosc/build", 
+                      "-DBUILD_TESTS=OFF", "-DBUILD_BENCHMARKS=OFF",
+                      "-DCMAKE_BUILD_TYPE=Release",
+                      "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"] ++
+                     -- On Windows, use static runtime to avoid DLL issues
+                     (if isWindows then ["-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"] else [])
     
-    -- Then build the specific target
-    let buildArgs = ["--build", "c-blosc/build"] ++ 
-                   (if null target then [] else ["--target", target]) ++
-                   (if null build_target then [] else ["--config", build_target])
+    -- Always configure the build to ensure latest settings are applied
+    rawSystemExit verbosity cmakeExec configArgs
+    
+    -- Then build the specific target with platform-specific optimizations
+    let baseArgs = ["--build", "c-blosc/build"]
+        -- On Windows, avoid specifying targets as this can cause hanging with MSBuild
+        targetArgs = if isWindows then [] 
+                     else (if null target then [] else ["--target", target])
+        configArgs = if null build_target 
+                     then (if isWindows then ["--config", "Release"] else [])
+                     else ["--config", build_target]
+        -- Add parallel build flags for faster builds, but avoid on Windows to prevent hanging
+        parallelArgs = if isWindows then [] else ["--parallel", "4"]
+        -- Add verbose flag to see what's happening during build
+        verboseArgs = if verbosity >= Verbosity.verbose then ["--verbose"] else []
+        buildArgs = baseArgs ++ targetArgs ++ configArgs ++ parallelArgs ++ verboseArgs
+    
     rawSystemExit verbosity cmakeExec buildArgs
 
 updateBloscVersion :: ConfigFlags -> IO ()

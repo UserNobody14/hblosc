@@ -65,6 +65,7 @@ custom-setup
   setup-depends:
     base >= 4 && < 5,
     Cabal >= 1.14 && < 4.0,
+    process,
     directory,
     filepath
 
@@ -107,8 +108,8 @@ library
         ForeignFunctionInterface
     -- C sources to be compiled and linked
 
-    -- Include directories for C sources
-    -- include-dirs:
+    -- Include directories for C headers
+    -- include-dirs:     
     --     c-blosc
     --     c-blosc/blosc
     --     c-blosc/build
