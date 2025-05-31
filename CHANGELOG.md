@@ -1,5 +1,5 @@
 # Revision history for hblosc
 
-## 0.1.0.0 -- YYYY-mm-dd
+## 0.1.0.0 -- 2025-05-31
 
-* First version. Released on an unsuspecting world.
+* Initial release.

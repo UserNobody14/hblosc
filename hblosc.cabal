@@ -23,10 +23,10 @@ name:               hblosc
 version:            0.1.0.0
 
 -- A short (one-line) description of the package.
--- synopsis:
+synopsis:           Blosc (numerical compression library) bindings for Haskell
 
 -- A longer description of the package.
--- description:
+description:        FFI bindings for blosc, a numerical compression library that includes a number of compression algorithms, as well as its own system for compressing and decompressing data.
 
 -- The license under which the package is released.
 license:            MIT
@@ -38,7 +38,7 @@ license-file:       LICENSE
 author:             Benjamin Sobel
 
 -- An email address to which users can send suggestions, bug reports, and patches.
-maintainer:         zqhlweic4ri8@opayq.com
+maintainer:         ben@silurian.ai
 
 -- A copyright notice.
 -- copyright:
@@ -53,6 +53,7 @@ extra-source-files:
     cbits/hs_blosc.h 
     cbits/hs_blosc.c
     c-blosc/Makefile
+    c-blosc/LICENSE.txt
     c-blosc/blosc/*.h
     c-blosc/blosc/*.c
     c-blosc/blosc/win32/*.h
