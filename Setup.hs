@@ -121,7 +121,11 @@ updateLibDirs :: Args -> BuildFlags -> IO HookedBuildInfo
 updateLibDirs _ _ = do
     dir <- getCurrentDirectory
     let bloscDir = dir ++ "/c-blosc/build/blosc"
-        bi = emptyBuildInfo { extraLibDirs = [ bloscDir ] }
+        -- On Windows with MSVC, also check the Release subdirectory
+        bloscReleaseDir = dir ++ "/c-blosc/build/blosc/Release"
+        isWindows = System.Info.os == "mingw32" || System.Info.os == "win32" || System.Info.os == "windows"
+        allDirs = if isWindows then [bloscReleaseDir, bloscDir] else [bloscDir]
+        bi = emptyBuildInfo { extraLibDirs = allDirs }
     return (Just bi, [])
 
 updateExtraLibDirs :: LocalBuildInfo -> IO LocalBuildInfo
@@ -152,12 +156,25 @@ copyLib fl lbi libPref =
     in unless external $
         if os == Windows
             then do
-                installExecutableFile verb
-                    "c-blosc/build/blosc/libblosc.a"
-                    (libPref ++ "/libblosc.a")
-                when shared $ installExecutableFile verb
-                    "c-blosc/build/blosc/libblosc.dll"
-                    (libPref ++ "/libblosc.dll")
+                -- On Windows with MSVC, the library is in a Release subdirectory
+                -- and uses .lib extension for static libraries
+                let staticLibPath = "c-blosc/build/blosc/Release/libblosc.lib"
+                    fallbackStaticPath = "c-blosc/build/blosc/libblosc.lib"
+                    altStaticPath = "c-blosc/build/blosc/libblosc.a"
+                staticExists <- doesFileExist staticLibPath
+                fallbackExists <- doesFileExist fallbackStaticPath
+                let actualStaticPath = if staticExists then staticLibPath 
+                                      else if fallbackExists then fallbackStaticPath
+                                      else altStaticPath
+                -- Copy as blosc.lib (without lib prefix) since extra-libraries expects "blosc"
+                installExecutableFile verb actualStaticPath (libPref ++ "/blosc.lib")
+                
+                when shared $ do
+                    let sharedLibPath = "c-blosc/build/blosc/Release/libblosc.dll"
+                        fallbackSharedPath = "c-blosc/build/blosc/libblosc.dll"
+                    sharedExists <- doesFileExist sharedLibPath
+                    let actualSharedPath = if sharedExists then sharedLibPath else fallbackSharedPath
+                    installExecutableFile verb actualSharedPath (libPref ++ "/blosc.dll")
            else
                 installExecutableFile verb
                     ("c-blosc/build/blosc/libblosc." ++ ext)
