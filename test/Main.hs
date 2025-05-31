@@ -1,29 +1,31 @@
 module Main (main) where
 
-import Codec.Compression.Blosc
-import qualified Data.ByteString as B
+import qualified Codec.Compression.Blosc as Blosc
+import qualified Data.ByteString          as B
+import           Data.ByteString          (ByteString)
 import qualified Data.ByteString.Char8 as BC
+
 
 -- | Example usage of Blosc compression
 -- This function demonstrates how to use the Blosc bindings
 bloscExample :: ByteString -> IO (ByteString, ByteString)
 bloscExample input = do
   -- Initialize Blosc
-  initBlosc
+  Blosc.initBlosc
 
   -- Compress using default options
-  compressed <- compress input
+  compressed <- Blosc.compress input
   putStrLn $ "Original size: " ++ show (B.length input) ++ " bytes"
   putStrLn $ "Compressed size: " ++ show (B.length compressed) ++ " bytes"
   
   -- Decompress
-  decompressed <- decompress compressed
+  decompressed <- Blosc.decompress compressed
   putStrLn $ "Decompressed size: " ++ show (B.length decompressed) ++ " bytes"
   putStrLn $ "Decompression successful: " ++ show (decompressed == input)
   
   -- Clean up
-  freeResult
-  destroyBlosc
+  Blosc.freeResult
+  Blosc.destroyBlosc
   
   return (compressed, decompressed) 
 

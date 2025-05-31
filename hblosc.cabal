@@ -49,7 +49,26 @@ build-type:         Simple
 extra-doc-files:    CHANGELOG.md
 
 -- Extra source files to be distributed with the package, such as examples, or a tutorial module.
--- extra-source-files:
+extra-source-files: 
+    cbits/hs_blosc.h 
+    cbits/hs_blosc.c
+    c-blosc/Makefile
+    c-blosc/blosc/*.h
+    c-blosc/blosc/*.c
+    c-blosc/blosc/win32/*.h
+    c-blosc/blosc/win32/*.c
+    c-blosc/blosc/Makefile
+
+flag externalBlosc
+  description:       Use Blosc that is installed in the system.
+  default:           False
+
+flag sharedBlosc
+  description:
+    Build Blosc as a shared library (only if external_blosc = False).
+  default:           False
+
+
 
 common warnings
     ghc-options: -Wall
@@ -67,20 +86,43 @@ library
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
 
+
     -- Other library packages from which modules are imported.
     build-depends:    base ^>=4.20.0.0
+                    , bytestring
 
-    -- Directories containing source files.
-    hs-source-dirs:   src
+    -- -- Directories containing source files.
+    -- hs-source-dirs:   src
+    -- pkgconfig-depends:
+    --     blosc
 
     -- Base language which the package is written in.
     default-language: Haskell2010
-    -- TODO: This is a hack to get the blosc library to link.
-    -- Make subrepo? Use nix?
-    extra-lib-dirs:   /usr/local/lib
-    
+
+    default-extensions:
+        ForeignFunctionInterface
+    -- C sources to be compiled and linked
+    c-sources:        cbits/hs_blosc.c
+
+    includes: 
+        hs_blosc.h 
+        blosc.h
+
+    -- Include directories for C sources
+    include-dirs:     
+        cbits 
+        c-blosc
+        c-blosc/blosc
+
+    -- CXX-Sources:        cbits/blosc.cpp
+    -- c-sources:        cbits/hs_blosc.c
+
     -- Extra libraries to link with
+    -- extra-lib-dirs:   c-blosc
     extra-libraries:  blosc
+    -- Extra libraries to link with
+    Ghc-Options:      -Wall
+
 
 test-suite hblosc-test
     -- Import common warning flags.
@@ -108,3 +150,4 @@ test-suite hblosc-test
     build-depends:
         base ^>=4.20.0.0,
         hblosc
+        , bytestring

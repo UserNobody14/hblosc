@@ -3,14 +3,14 @@
 {-# LANGUAGE OverloadedStrings        #-}
 
 -- |
--- Module:      Blosc
+-- Module:      Codec.Compression.Blosc
 -- Stability:   experimental
 -- Portability: portable
 --
 -- This module provides Haskell bindings to the Blosc compression library,
 -- a high performance compressor optimized for binary data.
 
-module Blosc
+module Codec.Compression.Blosc
     (
       -- * Compression and decompression
       compress
