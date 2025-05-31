@@ -27,19 +27,13 @@ module Codec.Compression.Blosc
     
     ) where
 
-import           Control.Exception        (bracket)
 import           Data.ByteString          (ByteString)
-import           Data.ByteString.Internal (ByteString(..), mallocByteString)
 import           Data.ByteString.Unsafe   (unsafeUseAsCStringLen)
-import           Data.Word                (Word8, Word32)
 import           Foreign.C.String         (CString, withCString)
 import           Foreign.C.Types          (CInt(..), CSize(..))
-import           Foreign.ForeignPtr       (withForeignPtr)
-import           Foreign.Marshal.Alloc    (alloca, free, malloc, mallocBytes)
-import           Foreign.Marshal.Utils    (with)
-import           Foreign.Ptr              (Ptr, castPtr, plusPtr)
+import           Foreign.Marshal.Alloc    (alloca, free, mallocBytes)
+import           Foreign.Ptr              (Ptr, castPtr)
 import           Foreign.Storable         (peek)
-import           System.IO.Unsafe         (unsafePerformIO)
 import qualified Data.ByteString          as B
 
 -- | Available compressors in Blosc
@@ -105,7 +99,7 @@ compressWithOptions bs compressor clevel shuffle blocksize =
       c_blosc_compress_ctx 
         (fromIntegral clevel)
         (fromIntegral shuffleInt)
-        (fromIntegral 4) -- typesize, assuming 4 bytes (32-bit values)
+        (fromIntegral (4 :: Integer)) -- typesize, assuming 4 bytes (32-bit values)
         (fromIntegral srcLen)
         (castPtr srcPtr)
         destPtr
@@ -125,7 +119,7 @@ compressWithOptions bs compressor clevel shuffle blocksize =
 -- | Decompress data that was compressed with Blosc
 decompress :: ByteString -> IO ByteString
 decompress bs =
-  unsafeUseAsCStringLen bs $ \(srcPtr, srcLen) -> do
+  unsafeUseAsCStringLen bs $ \(srcPtr, _srcLen) -> do
     -- Get the decompressed size
     alloca $ \nbytesPtr -> 
       alloca $ \cbytesPtr -> 
@@ -160,24 +154,24 @@ decompress bs =
               return bs'
 
 
-decompressWithOptions :: ByteString
-                      -> Int
-                      -> Int
-                      -> Int
-                      -> IO ByteString
-decompressWithOptions bs numBytes numThreads targetSize =
-  unsafeUseAsCStringLen bs $ \(srcPtr, srcLen) -> do
-    destPtr <- mallocBytes (fromIntegral targetSize)
-    result <- c_blosc_decompress_ctx
-      (castPtr srcPtr)
-      destPtr
-      (fromIntegral numBytes)
-      (fromIntegral numThreads)
-    bs' <- if result >= 0
-      then B.packCStringLen (castPtr destPtr, fromIntegral result)
-      else return B.empty
-    free destPtr
-    return bs'
+-- decompressWithOptions :: ByteString
+--                       -> Int
+--                       -> Int
+--                       -> Int
+--                       -> IO ByteString
+-- decompressWithOptions bs numBytes numThreads targetSize =
+--   unsafeUseAsCStringLen bs $ \(srcPtr, srcLen) -> do
+--     destPtr <- mallocBytes (fromIntegral targetSize)
+--     result <- c_blosc_decompress_ctx
+--       (castPtr srcPtr)
+--       destPtr
+--       (fromIntegral numBytes)
+--       (fromIntegral numThreads)
+--     bs' <- if result >= 0
+--       then B.packCStringLen (castPtr destPtr, fromIntegral result)
+--       else return B.empty
+--     free destPtr
+--     return bs'
 
 -- | Initialize the Blosc library. Should be called before any compression/decompression.
 initBlosc :: IO ()
