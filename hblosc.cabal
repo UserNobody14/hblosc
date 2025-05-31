@@ -43,7 +43,7 @@ maintainer:         zqhlweic4ri8@opayq.com
 -- A copyright notice.
 -- copyright:
 category:           Codec
-build-type:         Simple
+build-type:         Custom
 
 -- Extra doc files to be distributed with the package, such as a CHANGELOG or a README.
 extra-doc-files:    CHANGELOG.md
@@ -58,6 +58,17 @@ extra-source-files:
     c-blosc/blosc/win32/*.h
     c-blosc/blosc/win32/*.c
     c-blosc/blosc/Makefile
+    c-blosc/CMakeLists.txt
+    c-blosc/blosc/CMakeLists.txt
+    c-blosc/internal-complibs/**/*.h
+    c-blosc/internal-complibs/**/*.c
+
+custom-setup
+  setup-depends:
+    base >= 4 && < 5,
+    Cabal >= 1.14 && < 4.0,
+    directory,
+    filepath
 
 flag externalBlosc
   description:       Use Blosc that is installed in the system.
@@ -67,8 +78,6 @@ flag sharedBlosc
   description:
     Build Blosc as a shared library (only if external_blosc = False).
   default:           False
-
-
 
 common warnings
     ghc-options: -Wall
@@ -86,15 +95,12 @@ library
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
 
-
     -- Other library packages from which modules are imported.
     build-depends:    base ^>=4.20.0.0
                     , bytestring
 
-    -- -- Directories containing source files.
-    -- hs-source-dirs:   src
-    -- pkgconfig-depends:
-    --     blosc
+    -- Directories containing source files.
+    hs-source-dirs:   .
 
     -- Base language which the package is written in.
     default-language: Haskell2010
@@ -113,16 +119,13 @@ library
         cbits 
         c-blosc
         c-blosc/blosc
-
-    -- CXX-Sources:        cbits/blosc.cpp
-    -- c-sources:        cbits/hs_blosc.c
+        c-blosc/build
+        c-blosc/build/blosc
 
     -- Extra libraries to link with
-    -- extra-lib-dirs:   c-blosc
     extra-libraries:  blosc
     -- Extra libraries to link with
     Ghc-Options:      -Wall
-
 
 test-suite hblosc-test
     -- Import common warning flags.
