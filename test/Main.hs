@@ -24,7 +24,6 @@ bloscExample input = do
   putStrLn $ "Decompression successful: " ++ show (decompressed == input)
   
   -- Clean up
-  Blosc.freeResult
   Blosc.destroyBlosc
   
   return (compressed, decompressed) 

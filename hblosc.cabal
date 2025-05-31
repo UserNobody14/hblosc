@@ -49,10 +49,9 @@ build-type:         Custom
 extra-doc-files:    CHANGELOG.md
 
 -- Extra source files to be distributed with the package, such as examples, or a tutorial module.
-extra-source-files: 
-    cbits/hs_blosc.h 
-    cbits/hs_blosc.c
+extra-source-files:
     c-blosc/LICENSE.txt
+    c-blosc/VERSION
     c-blosc/blosc/*.h
     c-blosc/blosc/*.c
     c-blosc/blosc/win32/*.h
@@ -107,15 +106,13 @@ library
     default-extensions:
         ForeignFunctionInterface
     -- C sources to be compiled and linked
-    c-sources:        cbits/hs_blosc.c
-
-    includes: 
-        hs_blosc.h 
-        blosc.h
 
     -- Include directories for C sources
-    include-dirs:     
-        cbits
+    -- include-dirs:
+    --     c-blosc
+    --     c-blosc/blosc
+    --     c-blosc/build
+    --     c-blosc/build/blosc
 
     -- Extra libraries to link with
     extra-libraries:  blosc

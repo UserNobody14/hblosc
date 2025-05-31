@@ -17,9 +17,6 @@ module Codec.Compression.Blosc
     , decompress
     , compressWithOptions
     
-      -- * Memory management
-    , freeResult
-    
       -- * Library initialization
     , initBlosc
     , destroyBlosc
@@ -28,8 +25,6 @@ module Codec.Compression.Blosc
     , BloscCompressor(..)
     , BloscShuffle(..)
     
-      -- * Example usage
-    , bloscExample
     ) where
 
 import           Control.Exception        (bracket)
@@ -183,12 +178,6 @@ decompressWithOptions bs numBytes numThreads targetSize =
       else return B.empty
     free destPtr
     return bs'
-      
-
-
--- | Free any resources allocated by Blosc
-freeResult :: IO ()
-freeResult = c_free_result
 
 -- | Initialize the Blosc library. Should be called before any compression/decompression.
 initBlosc :: IO ()
@@ -227,36 +216,10 @@ foreign import ccall unsafe "blosc.h blosc_cbuffer_sizes"
                         -> Ptr CSize -- blocksize
                         -> IO ()
 
-foreign import ccall unsafe "hs_blosc.h free_result"
-  c_free_result :: IO ()
 
 -- Initialize and destroy Blosc
-
-foreign import ccall unsafe "hs_blosc.h hs_blosc_init"
+foreign import ccall unsafe "blosc.h blosc_init"
   c_blosc_init :: IO ()
 
-foreign import ccall unsafe "hs_blosc.h hs_blosc_destroy"
+foreign import ccall unsafe "blosc.h blosc_destroy"
   c_blosc_destroy :: IO ()
-
--- | Example usage of Blosc compression
--- This function demonstrates how to use the Blosc bindings
-bloscExample :: ByteString -> IO (ByteString, ByteString)
-bloscExample input = do
-  -- Initialize Blosc
-  initBlosc
-
-  -- Compress using default options
-  compressed <- compress input
-  putStrLn $ "Original size: " ++ show (B.length input) ++ " bytes"
-  putStrLn $ "Compressed size: " ++ show (B.length compressed) ++ " bytes"
-  
-  -- Decompress
-  decompressed <- decompress compressed
-  putStrLn $ "Decompressed size: " ++ show (B.length decompressed) ++ " bytes"
-  putStrLn $ "Decompression successful: " ++ show (decompressed == input)
-  
-  -- Clean up
-  freeResult
-  destroyBlosc
-  
-  return (compressed, decompressed) 
