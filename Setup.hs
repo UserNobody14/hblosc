@@ -68,7 +68,7 @@ execCMake verbosity build_target target = do
                       "-DBUILD_TESTS=OFF", "-DBUILD_BENCHMARKS=OFF",
                       "-DCMAKE_BUILD_TYPE=Release",
                       "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"] ++
-                     -- On Windows, use static runtime to avoid DLL issues
+                     -- On Windows, use static runtime to avoid DLL issues and ensure proper MSVC naming
                      (if isWindows then ["-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"] else [])
     
     -- Always configure the build to ensure latest settings are applied
@@ -121,10 +121,11 @@ updateLibDirs :: Args -> BuildFlags -> IO HookedBuildInfo
 updateLibDirs _ _ = do
     dir <- getCurrentDirectory
     let bloscDir = dir ++ "/c-blosc/build/blosc"
-        -- On Windows with MSVC, also check the Release subdirectory
+        -- On Windows with MSVC, check multiple possible output locations
         bloscReleaseDir = dir ++ "/c-blosc/build/blosc/Release"
+        bloscDebugDir = dir ++ "/c-blosc/build/blosc/Debug"
         isWindows = System.Info.os == "mingw32" || System.Info.os == "win32" || System.Info.os == "windows"
-        allDirs = if isWindows then [bloscReleaseDir, bloscDir] else [bloscDir]
+        allDirs = if isWindows then [bloscReleaseDir, bloscDebugDir, bloscDir] else [bloscDir]
         bi = emptyBuildInfo { extraLibDirs = allDirs }
     return (Just bi, [])
 
@@ -156,29 +157,51 @@ copyLib fl lbi libPref =
     in unless external $
         if os == Windows
             then do
-                -- On Windows with MSVC, the library is in a Release subdirectory
-                -- and uses .lib extension for static libraries
-                let staticLibPath = "c-blosc/build/blosc/Release/libblosc.lib"
-                    fallbackStaticPath = "c-blosc/build/blosc/libblosc.lib"
-                    altStaticPath = "c-blosc/build/blosc/libblosc.a"
-                staticExists <- doesFileExist staticLibPath
-                fallbackExists <- doesFileExist fallbackStaticPath
-                let actualStaticPath = if staticExists then staticLibPath 
-                                      else if fallbackExists then fallbackStaticPath
-                                      else altStaticPath
-                -- Copy as blosc.lib (without lib prefix) since extra-libraries expects "blosc"
-                installExecutableFile verb actualStaticPath (libPref ++ "/blosc.lib")
+                -- On Windows, CMake generates different library names based on the generator
+                -- Static libraries: libblosc.lib (MSVC) or libblosc.a (MinGW)
+                -- Shared libraries: blosc.dll with blosc.lib import library
+                let basePaths = ["c-blosc/build/blosc/Release", "c-blosc/build/blosc/Debug", "c-blosc/build/blosc"]
+                    staticNames = ["libblosc.lib", "blosc.lib", "libblosc.a"]
+                    sharedDllNames = ["blosc.dll", "libblosc.dll"]
+                    sharedLibNames = ["blosc.lib", "libblosc.lib"]
                 
-                when shared $ do
-                    let sharedLibPath = "c-blosc/build/blosc/Release/libblosc.dll"
-                        fallbackSharedPath = "c-blosc/build/blosc/libblosc.dll"
-                    sharedExists <- doesFileExist sharedLibPath
-                    let actualSharedPath = if sharedExists then sharedLibPath else fallbackSharedPath
-                    installExecutableFile verb actualSharedPath (libPref ++ "/blosc.dll")
+                if shared
+                then do
+                    -- For shared builds, copy both DLL and import library
+                    -- Find and copy the DLL
+                    dllFound <- findAndCopyFirst verb basePaths sharedDllNames (libPref ++ "/blosc.dll")
+                    unless dllFound $
+                        error "Could not find blosc DLL in any expected location"
+                    
+                    -- Find and copy the import library  
+                    libFound <- findAndCopyFirst verb basePaths sharedLibNames (libPref ++ "/blosc.lib")
+                    unless libFound $
+                        error "Could not find blosc import library in any expected location"
+                else do
+                    -- For static builds, find and copy the static library
+                    staticFound <- findAndCopyFirst verb basePaths staticNames (libPref ++ "/blosc.lib")
+                    unless staticFound $
+                        error "Could not find blosc static library in any expected location"
            else
                 installExecutableFile verb
                     ("c-blosc/build/blosc/libblosc." ++ ext)
                     (libPref ++ "/libblosc." ++ ext)
+
+-- Helper function to find and copy the first existing file from multiple possible paths/names
+findAndCopyFirst :: Verbosity.Verbosity -> [FilePath] -> [String] -> FilePath -> IO Bool
+findAndCopyFirst verb basePaths names destPath = do
+    let allPaths = [basePath ++ "/" ++ name | basePath <- basePaths, name <- names]
+    findAndCopyFromList verb allPaths destPath
+
+findAndCopyFromList :: Verbosity.Verbosity -> [FilePath] -> FilePath -> IO Bool
+findAndCopyFromList _ [] _ = return False
+findAndCopyFromList verb (srcPath:rest) destPath = do
+    exists <- doesFileExist srcPath
+    if exists
+    then do
+        installExecutableFile verb srcPath destPath
+        return True
+    else findAndCopyFromList verb rest destPath
 
 copyBlosc :: Args -> CopyFlags -> PackageDescription -> LocalBuildInfo -> IO ()
 copyBlosc _ flags pkg_descr lbi =
