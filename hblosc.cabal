@@ -51,6 +51,8 @@ extra-doc-files:    CHANGELOG.md
 -- Extra source files to be distributed with the package, such as examples, or a tutorial module.
 extra-source-files:
     c-blosc/LICENSE.txt
+    c-blosc/README.md
+    c-blosc/blosc.pc.in
     c-blosc/blosc/*.h
     c-blosc/blosc/*.c
     c-blosc/blosc/win32/*.h
