@@ -59,6 +59,7 @@ extra-source-files:
     c-blosc/tests/**/*.csv
     c-blosc/blosc/*.h
     c-blosc/blosc/*.c
+    c-blosc/blosc/*.in
     c-blosc/blosc/win32/*.h
     c-blosc/blosc/win32/*.c
     c-blosc/CMakeLists.txt
