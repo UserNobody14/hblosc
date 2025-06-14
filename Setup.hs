@@ -75,8 +75,14 @@ execCMakeWithFlags verbosity build_target target usePIC = do
                       "-DCMAKE_POSITION_INDEPENDENT_CODE=" ++ picFlag,
                       -- Disable assembly optimizations that cause linking issues
                       "-DDEACTIVATE_AVX2=ON",
-                      -- Disable ZSTD completely to avoid assembly linking issues
-                      "-DDEACTIVATE_ZSTD=ON",
+                      -- Enable ZSTD but use external version to avoid assembly issues
+                      -- If external zstd is not available, this will fall back to internal version with safer settings
+                      "-DPREFER_EXTERNAL_ZSTD=OFF",
+                      -- Ensure ZSTD is explicitly enabled (overrides any default deactivation)
+                      "-DDEACTIVATE_ZSTD=OFF",
+                      -- Force MSVC-style compilation to disable ZSTD assembly (even on non-MSVC)
+                      -- This triggers the assembly-disabled path in c-blosc's CMakeLists.txt
+                      "-DMSVC=ON",
                       -- Keep basic compression algorithms
                       "-DPREFER_EXTERNAL_LZ4=OFF",
                       "-DPREFER_EXTERNAL_ZLIB=OFF"] ++
