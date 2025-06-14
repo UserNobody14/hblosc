@@ -52,7 +52,11 @@ extra-doc-files:    CHANGELOG.md
 extra-source-files:
     c-blosc/LICENSE.txt
     c-blosc/README.md
-    c-blosc/blosc.pc.in
+    c-blosc/*.in
+    c-blosc/tests/**/*.h
+    c-blosc/tests/**/*.c
+    c-blosc/tests/**/CMakeLists.txt
+    c-blosc/tests/**/*.csv
     c-blosc/blosc/*.h
     c-blosc/blosc/*.c
     c-blosc/blosc/win32/*.h
