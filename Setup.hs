@@ -52,8 +52,8 @@ main = defaultMainWithHooks hooksFix
                        then hooks { postInst = installBlosc }
                        else hooks
 
-execCMake :: Verbosity.Verbosity -> String -> String -> IO ()
-execCMake verbosity build_target target = do
+execCMakeWithFlags :: Verbosity.Verbosity -> String -> String -> Bool -> IO ()
+execCMakeWithFlags verbosity build_target target usePIC = do
     cmakePath <- findProgramOnSearchPath Verbosity.silent defaultProgramSearchPath "cmake"
     let cmakeExec = case cmakePath of
 #if MIN_VERSION_Cabal(1, 24, 0)
@@ -66,10 +66,20 @@ execCMake verbosity build_target target = do
     -- Platform-specific configuration options
     -- On Windows, use simpler build options to avoid hanging with MSBuild
     let isWindows = System.Info.os == "mingw32" || System.Info.os == "win32" || System.Info.os == "windows"
+        -- Always enable PIC for static libraries to avoid linking issues when used as dependencies
+        -- For static builds, we need PIC to link into shared libraries
+        picFlag = if target == "blosc_static" || usePIC then "ON" else "OFF"
         configArgs = ["-S", "c-blosc", "-B", "c-blosc/build", 
                       "-DBUILD_TESTS=OFF", "-DBUILD_BENCHMARKS=OFF",
                       "-DCMAKE_BUILD_TYPE=Release",
-                      "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"] ++
+                      "-DCMAKE_POSITION_INDEPENDENT_CODE=" ++ picFlag,
+                      -- Disable assembly optimizations that cause linking issues
+                      "-DDEACTIVATE_AVX2=ON",
+                      -- Disable ZSTD completely to avoid assembly linking issues
+                      "-DDEACTIVATE_ZSTD=ON",
+                      -- Keep basic compression algorithms
+                      "-DPREFER_EXTERNAL_LZ4=OFF",
+                      "-DPREFER_EXTERNAL_ZLIB=OFF"] ++
                      -- On Windows, use static runtime to avoid DLL issues and ensure proper MSVC naming
                      (if isWindows then ["-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"] else [])
     
@@ -91,6 +101,10 @@ execCMake verbosity build_target target = do
         buildArgs = baseArgs ++ targetArgs ++ configArgs ++ parallelArgs ++ verboseArgs
     
     rawSystemExit verbosity cmakeExec buildArgs
+
+-- Backward compatibility wrapper
+execCMake :: Verbosity.Verbosity -> String -> String -> IO ()
+execCMake verbosity build_target target = execCMakeWithFlags verbosity build_target target True
 
 updateBloscVersion :: ConfigFlags -> IO ()
 updateBloscVersion flags = do
@@ -126,10 +140,11 @@ makeBlosc _ f = do
         external = getCabalFlag "externalBlosc" f
         target = if getCabalFlag "sharedBlosc" f then "blosc_shared" else "blosc_static"
         shared = getCabalFlag "sharedBlosc" f
+        usePIC = getCabalFlag "usePIC" f
         ext = if shared then "so" else "a"
     unless external $ do
         updateBloscVersion f
-        execCMake verbosity "" target
+        execCMakeWithFlags verbosity "" target usePIC
         -- Copy the built library to the location expected by cabal
         let srcPath = "c-blosc/build/blosc/libblosc." ++ ext
             destPath = "dist/build/libblosc." ++ ext

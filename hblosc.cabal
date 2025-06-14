@@ -87,7 +87,7 @@ flag sharedBlosc
 flag usePIC
   description:
     Build Blosc with position-independent code (only if external_blosc = False).
-  default:           False
+  default:           True
 
 common warnings
     ghc-options: -Wall
@@ -137,11 +137,6 @@ library
     else
       -- Use the CMake-built blosc library
       extra-libraries: blosc
-      extra-lib-dirs: c-blosc/build/blosc
-      -- On Windows, also check Release/Debug subdirectories
-      if os(windows)
-        extra-lib-dirs: c-blosc/build/blosc/Release
-                       c-blosc/build/blosc/Debug
       
       include-dirs:
         c-blosc
@@ -185,7 +180,3 @@ test-suite hblosc-test
       extra-libraries: blosc
     else
       extra-libraries: blosc
-      extra-lib-dirs: c-blosc/build/blosc
-      if os(windows)
-        extra-lib-dirs: c-blosc/build/blosc/Release
-                       c-blosc/build/blosc/Debug
