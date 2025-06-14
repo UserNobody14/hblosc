@@ -43,7 +43,7 @@ maintainer:         ben@silurian.ai
 -- A copyright notice.
 -- copyright:
 category:           Codec
-build-type:         Simple
+build-type:         Custom
 
 -- Extra doc files to be distributed with the package, such as a CHANGELOG or a README.
 extra-doc-files:    CHANGELOG.md
@@ -82,6 +82,11 @@ flag externalBlosc
 flag sharedBlosc
   description:
     Build Blosc as a shared library (only if external_blosc = False).
+  default:           False
+
+flag usePIC
+  description:
+    Build Blosc with position-independent code (only if external_blosc = False).
   default:           False
 
 common warnings
@@ -123,7 +128,17 @@ library
 
     -- Extra libraries to link with
     -- extra-libraries:  blosc
-    pkgconfig-depends: blosc
+    if flag(usePIC)
+        cc-options: -fPIC
+    else
+        cc-options: -fno-PIC
+
+    if flag(externalBlosc)
+      pkgconfig-depends: blosc
+    else
+
+      extra-libraries: blosc
+
     -- Extra libraries to link with
     Ghc-Options:      -Wall
 
