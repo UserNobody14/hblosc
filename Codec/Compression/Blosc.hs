@@ -50,7 +50,6 @@ data BloscShuffle =
     NoShuffle       -- ^ No shuffle
   | ByteShuffle     -- ^ Byte shuffle
   | BitShuffle      -- ^ Bit shuffle
-  | AutoShuffle     -- ^ Let Blosc decide
   deriving (Show, Eq)
 
 -- | Convert BloscCompressor to its string name
@@ -66,7 +65,6 @@ shuffleToInt :: BloscShuffle -> Int
 shuffleToInt NoShuffle   = 0
 shuffleToInt ByteShuffle = 1
 shuffleToInt BitShuffle  = 2
-shuffleToInt AutoShuffle = -1
 
 -- Constants
 bloscMaxOverhead :: Int
