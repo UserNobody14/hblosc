@@ -66,26 +66,44 @@ execCMakeWithFlags verbosity build_target target usePIC = do
     -- Platform-specific configuration options
     -- On Windows, use simpler build options to avoid hanging with MSBuild
     let isWindows = System.Info.os == "mingw32" || System.Info.os == "win32" || System.Info.os == "windows"
+        isMacOS = System.Info.os == "darwin"
+        isAppleSilicon = System.Info.arch == "aarch64" && isMacOS
         -- Always enable PIC for static libraries to avoid linking issues when used as dependencies
         -- For static builds, we need PIC to link into shared libraries
         picFlag = if target == "blosc_static" || usePIC then "ON" else "OFF"
-        configArgs = ["-S", "c-blosc", "-B", "c-blosc/build", 
-                      "-DBUILD_TESTS=OFF", "-DBUILD_BENCHMARKS=OFF",
-                      "-DCMAKE_BUILD_TYPE=Release",
-                      "-DCMAKE_POSITION_INDEPENDENT_CODE=" ++ picFlag,
-                      -- Disable assembly optimizations that cause linking issues
-                      "-DDEACTIVATE_AVX2=ON",
-                      -- Enable ZSTD but use external version to avoid assembly issues
-                      -- If external zstd is not available, this will fall back to internal version with safer settings
-                      "-DPREFER_EXTERNAL_ZSTD=OFF",
-                      -- Ensure ZSTD is explicitly enabled (overrides any default deactivation)
-                      "-DDEACTIVATE_ZSTD=OFF",
-                      -- Force MSVC-style compilation to disable ZSTD assembly (even on non-MSVC)
-                      -- This triggers the assembly-disabled path in c-blosc's CMakeLists.txt
-                      "-DMSVC=ON",
-                      -- Keep basic compression algorithms
-                      "-DPREFER_EXTERNAL_LZ4=OFF",
-                      "-DPREFER_EXTERNAL_ZLIB=OFF"] ++
+        baseConfigArgs = ["-S", "c-blosc", "-B", "c-blosc/build", 
+                          "-DBUILD_TESTS=OFF", "-DBUILD_BENCHMARKS=OFF",
+                          "-DCMAKE_BUILD_TYPE=Release",
+                          "-DCMAKE_POSITION_INDEPENDENT_CODE=" ++ picFlag,
+                          -- Disable assembly optimizations that cause linking issues
+                          "-DDEACTIVATE_AVX2=ON",
+                          -- Enable ZSTD but use external version to avoid assembly issues
+                          -- If external zstd is not available, this will fall back to internal version with safer settings
+                          "-DPREFER_EXTERNAL_ZSTD=OFF",
+                          -- Ensure ZSTD is explicitly enabled (overrides any default deactivation)
+                          "-DDEACTIVATE_ZSTD=OFF",
+                          -- Force MSVC-style compilation to disable ZSTD assembly (even on non-MSVC)
+                          -- This triggers the assembly-disabled path in c-blosc's CMakeLists.txt
+                          "-DMSVC=ON",
+                          -- Keep basic compression algorithms
+                          "-DPREFER_EXTERNAL_LZ4=OFF",
+                          "-DPREFER_EXTERNAL_ZLIB=OFF"]
+        -- macOS specific configuration
+        macOSFlags = if isMacOS then [
+                          -- Fix threading on macOS
+                          "-DCMAKE_THREAD_LIBS_INIT=-lpthread",
+                          "-DCMAKE_HAVE_THREADS_LIBRARY=1",
+                          "-DCMAKE_USE_WIN32_THREADS_INIT=0",
+                          "-DCMAKE_USE_PTHREADS_INIT=1",
+                          "-DTHREADS_FOUND=TRUE",
+                          "-DThreads_FOUND=TRUE"] ++ 
+                          (if isAppleSilicon then [
+                              -- Apple Silicon specific flags
+                              "-DCMAKE_SYSTEM_PROCESSOR=aarch64",
+                              "-DCMAKE_OSX_ARCHITECTURES=arm64"
+                          ] else [])
+                     else []
+        configArgs = baseConfigArgs ++ macOSFlags ++
                      -- On Windows, use static runtime to avoid DLL issues and ensure proper MSVC naming
                      (if isWindows then ["-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"] else [])
     
