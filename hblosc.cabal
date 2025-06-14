@@ -122,7 +122,8 @@ library
     --     c-blosc/build/blosc
 
     -- Extra libraries to link with
-    extra-libraries:  blosc
+    -- extra-libraries:  blosc
+    pkgconfig-depends: blosc
     -- Extra libraries to link with
     Ghc-Options:      -Wall
 
