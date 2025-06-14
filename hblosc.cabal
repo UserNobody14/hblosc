@@ -127,19 +127,39 @@ library
     --     c-blosc/build/blosc
 
     -- Extra libraries to link with
-    -- extra-libraries:  blosc
     if flag(usePIC)
         cc-options: -fPIC
     else
         cc-options: -fno-PIC
 
     if flag(externalBlosc)
-      pkgconfig-depends: blosc
-    else
-
       extra-libraries: blosc
+    else
+      -- c-sources:
+      --   c-blosc/blosc/blosc.c
+      --   c-blosc/blosc/shuffle.c
+      --   c-blosc/blosc/blosclz.c
+      --   c-blosc/blosc/fastcopy.c
+      --   c-blosc/blosc/shuffle-generic.c
+      --   c-blosc/blosc/bitshuffle-generic.c
+      --   c-blosc/internal-complibs/lz4-1.10.0/lz4.c
+      --   c-blosc/internal-complibs/lz4-1.10.0/lz4hc.c
 
-    -- Extra libraries to link with
+      -- include-dirs:
+      --   c-blosc
+      --   c-blosc/blosc
+      --   c-blosc/internal-complibs/lz4-1.10.0
+
+      -- cc-options: -DHAVE_LZ4 -DHAVE_ZLIB -DHAVE_ZSTD
+      
+      -- Just use the bundled blosc installed via cmake
+      include-dirs:
+        c-blosc/install/include
+      extra-bundled-libraries:
+        blosc
+      includes:
+        c-blosc/blosc/blosc.h
+      
     Ghc-Options:      -Wall
 
 test-suite hblosc-test
