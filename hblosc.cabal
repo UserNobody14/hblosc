@@ -20,7 +20,7 @@ name:               hblosc
 -- PVP summary:     +-+------- breaking API changes
 --                  | | +----- non-breaking API additions
 --                  | | | +--- code changes with no API change
-version:            0.1.0.1
+version:            0.1.0.2
 
 -- A short (one-line) description of the package.
 synopsis:           Blosc (numerical compression library) bindings for Haskell
@@ -68,13 +68,6 @@ extra-source-files:
     c-blosc/internal-complibs/**/*.c
     c-blosc/internal-complibs/**/*.S
 
-custom-setup
-  setup-depends:
-    base >= 4 && < 5,
-    Cabal >= 1.14 && < 4.0,
-    process,
-    directory,
-    filepath
 
 flag externalBlosc
   description:       Use Blosc that is installed in the system.
